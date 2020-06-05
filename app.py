@@ -28,6 +28,7 @@ deaths_grouped_df = deaths_grouped_df.sort_values(by=['Date'])
 deaths_grouped_df['log_deaths'] = np.log(deaths_grouped_df['Deaths'])
 
 app = dash.Dash(__name__)
+server = app.server
 
 app.layout = html.Div([
     html.H1('Covid-19 Tracker'),
@@ -56,6 +57,3 @@ def update_figure(selected_type):
             animation_frame=df['Date'].astype(str),
             projection="natural earth")
     )
-
-if __name__ == '__main__':
-    app.run_server(debug=True)
