@@ -36,7 +36,7 @@ app.layout = html.Div([
         id='type-selector',
         options=[{'label': i, 'value': i} for i in ['confirmed', 'deaths']],
         value='confirmed',
-        style={'margin-top': '60px'}
+        style={'marginTop': '20px'}
     ),
     dcc.Graph(id='covid-map')
 ], style={'text-align':'center'})
@@ -46,6 +46,7 @@ app.layout = html.Div([
     [Input('type-selector', 'value')])
 def update_figure(selected_type):
     df = confirmed_grouped_df if selected_type == 'confirmed' else deaths_grouped_df
+    print("hi")
     return (
         px.scatter_geo(df,
             lat = df['Lat'],
@@ -57,3 +58,6 @@ def update_figure(selected_type):
             animation_frame=df['Date'].astype(str),
             projection="natural earth")
     )
+
+if __name__ == "__main__":
+    app.run_server(debug=True)
