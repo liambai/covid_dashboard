@@ -7,7 +7,7 @@ from dash.dependencies import Input, Output
 import pandas as pd
 import numpy as np
 
-covid_df = pd.read_csv("covid_19_clean_complete.csv")
+covid_df = pd.read_csv("data/covid_19_clean_complete.csv")
 covid_confirmed_df = covid_df[covid_df['Confirmed'] > 0]
 covid_deaths_df = covid_df[covid_df['Deaths'] > 0]
 
@@ -46,7 +46,6 @@ app.layout = html.Div([
     [Input('type-selector', 'value')])
 def update_figure(selected_type):
     df = confirmed_grouped_df if selected_type == 'confirmed' else deaths_grouped_df
-    print("hi")
     return (
         px.scatter_geo(df,
             lat = df['Lat'],
