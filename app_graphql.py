@@ -79,7 +79,7 @@ def get_country_data(country_code):
     return location_info, cases_info
 
 def fetchData(): 
-    country_codes = get_country_codes()[:10]
+    country_codes = get_country_codes()[:20]
     rows = []
     for code in country_codes:
         country_name = get_country_name(code)
@@ -104,10 +104,10 @@ def createMap(df, selected_category):
     return px.scatter_geo(df,
         lat = df['Lat'],
         lon = df['Long'],
-        color=df["Log " + selected_category],
+        color=df[selected_category],
         opacity=0.4,
         hover_name=df['Country'],
-        size=df["Log " + selected_category],
+        size=df[selected_category],
         animation_frame=df['Date'].astype(str),
         projection="natural earth")
     
