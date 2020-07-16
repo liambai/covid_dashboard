@@ -44,6 +44,7 @@ app.layout = html.Div([
 @app.callback(
     Output('covid-map', 'figure'),
     [Input('type-selector', 'value')])
+    
 def update_figure(selected_type):
     df = confirmed_grouped_df if selected_type == 'confirmed' else deaths_grouped_df
     return (
