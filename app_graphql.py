@@ -83,6 +83,7 @@ def fetchData():
     rows = []
     for code in country_codes:
         country_name = get_country_name(code)
+        print("fetching data for country: ", country_name)
         location_info, cases_info = get_country_data(code)
 
         for date in cases_info.keys():
