@@ -79,7 +79,7 @@ def get_country_data(country_code):
     return location_info, cases_info
 
 def fetchData(): 
-    country_codes = get_country_codes()
+    country_codes = get_country_codes()[:10]
     rows = []
     for code in country_codes:
         country_name = get_country_name(code)
