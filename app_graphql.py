@@ -68,7 +68,7 @@ def createMap(df, selected_category):
     return px.scatter_geo(df,
         lat = df['Lat'],
         lon = df['Long'],
-        color=df["Log10 " + selected_category],
+        color=df[selected_category],
         opacity=0.4,
         hover_name=df['Country'],
         size=df["Ln " + selected_category],
