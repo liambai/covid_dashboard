@@ -8,110 +8,72 @@ import requests
 import json
 import numpy as np
 import pandas as pd
+from datetime import datetime
 
 url = "https://api-corona.azurewebsites.net/graphql"
+with open('./data/graphql_country_locations.json', 'r') as fp:
+    location_dict = json.load(fp)
+summary_df = pd.read_csv('./data/graphql.csv')
 
-def get_country_codes():
-    country_codes_query = '''
+def fetch_new_data():
+    new_data_query = '''
     {
         summary {
             countries {
                 Code
-        }
-      }
-    }
-
-    '''
-    country_codes_request = requests.post(url, json={"query": country_codes_query})
-    if country_codes_request.status_code != 200:
-        raise Exception("Query failed")
-        
-    country_codes = country_codes_request.json()['data']['summary']['countries']
-    return [e['Code'] for e in country_codes if e['Code'] is not None]
-
-def get_country_name(country_code): 
-    country_name_query = ''' 
-    query getCountryName($countryCode: ID!) {
-        country(country: $countryCode) {
-            Summary {
+                Confirmed
+                Deaths
+                Last_Update
                 Slug
             }
         }
     }
     '''
-    body = {
-        "query": country_name_query,
-        "variables": {"countryCode": country_code}
-    }
     
-    country_name_request = requests.post(url, json=body)
+    new_data_request = requests.post(url, json={"query": new_data_query,})
     
-    if country_name_request.status_code != 200:
+    if new_data_request.status_code != 200:
         raise Exception("Query failed.")
-    return country_name_request.json()['data']['country']['Summary']['Slug']
+    return new_data_request.json()['data']['summary']['countries']
 
-def get_country_data(country_code):
-    country_data_query = ''' 
-    query getCountryData($countryCode: ID!) {
-        timelineCountry(country: $countryCode) {
-            Country
-            Date
-            Confirmed
-            Deaths
-            Lat
-            Long
-        }
-    } 
-    '''
-    body = {
-        "query": country_data_query,
-        "variables": {"countryCode": country_code}
-    }
-
-    country_data_request = requests.post(url, json=body)
-
-    if country_data_request.status_code != 200:
-        raise Exception("Query failed")
+def update_data(df):
+    new_data = fetch_new_data()
+    for country_data in new_data:
+        country_code = country_data['Code']
+        if not country_code:
+            continue
+        current_date = datetime.strptime(country_data['Last_Update'].split(" ")[0], '%Y-%m-%d')
+        current_date_formatted = current_date.strftime("%m-%d-%Y")
+        current_date_df = df[(df['Date'] == current_date_formatted) & (df['Country Code'] == country_code)]
         
-    country_info = country_data_request.json()['data']['timelineCountry']
-    location_info = {"Lat": country_info[0]["Lat"], "Long": country_info[0]["Long"]}
-    cases_info = {e['Date']: {"Confirmed": e['Confirmed'], "Deaths": e['Deaths']} for e in country_info} 
-    return location_info, cases_info
-
-def fetchData(): 
-    country_codes = get_country_codes()[:20]
-    rows = []
-    for code in country_codes:
-        country_name = get_country_name(code)
-        print("fetching data for country: ", country_name)
-        location_info, cases_info = get_country_data(code)
-
-        for date in cases_info.keys():
+        # add new row if data corresponding to the current country and date does not exist
+        if current_date_df.empty:
+            row = {}
+            row['Country Code'] = country_code
+            row['Country'] = country_data['Slug']
+            row['Lat'] = location_dict[country_code]['Lat']
+            row['Long'] = location_dict[country_code]['Long']
+            row['Date'] = current_date_formatted
+            row['Confirmed'] = country_data['Confirmed']
+            row['Deaths'] = country_data['Deaths']
+            row['Log10 Confirmed'] = max(0, np.log10(country_data['Confirmed']))
+            row['Log10 Deaths'] = max(0, np.log10(country_data['Deaths']))
+            row['Ln Confirmed'] = max(0, np.log(country_data['Confirmed']))
+            row['Ln Deaths'] = max(0, np.log(country_data['Deaths']))
             
-            confirmed = cases_info[date]["Confirmed"]
-            log_confirmed = max(0, np.log10(confirmed))
-
-            deaths = cases_info[date]["Deaths"]
-            log_deaths = max(0, np.log10(deaths))
-
-            rows.append([country_name, location_info["Lat"], location_info["Long"], date, 
-                              confirmed, deaths, log_confirmed, log_deaths])
-
-    return pd.DataFrame(rows, columns=['Country', 'Lat', 'Long', 'Date', 'Confirmed', "Deaths",
-                                              "Log Confirmed", "Log Deaths"])
+            df = df.append(row, ignore_index=True)
+    return df
 
 def createMap(df, selected_category):
     return px.scatter_geo(df,
         lat = df['Lat'],
         lon = df['Long'],
-        color=df[selected_category],
+        color=df["Log10 " + selected_category],
         opacity=0.4,
         hover_name=df['Country'],
-        size=df[selected_category],
+        size=df["Ln " + selected_category],
         animation_frame=df['Date'].astype(str),
         projection="natural earth")
-    
-summary_df = fetchData()
 
 app = dash.Dash(__name__)
 server = app.server
@@ -137,12 +99,12 @@ app.layout = html.Div([
     [Input('type-selector', 'value'),
     Input('interval-component', 'n_intervals')])
 def update_map(selected_type, n):
-    df = summary_df
+    global summary_df
     ctx = dash.callback_context
     if ctx.triggered:
         if ctx.triggered[0]['prop_id'] == 'interval-component.n_intervals':
-            df = fetchData()
-    return createMap(df, selected_type)
+            summary_df = update_data(summary_df)
+    return createMap(summary_df, selected_type)
 
 if __name__ == "__main__":
   app.run_server(debug=True)
