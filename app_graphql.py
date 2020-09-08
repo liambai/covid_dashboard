@@ -4,14 +4,27 @@ import dash_html_components as html
 import plotly.express as px
 from dash.dependencies import Input, Output
 
-import requests
 import json
-import numpy as np
 import pandas as pd
-from datetime import datetime
+import psycopg2
 
-url = "https://api-corona.azurewebsites.net/graphql"
-summary_df = pd.read_csv('./data/graphql.csv')
+# Create a database connection
+user = 'postgres'
+host = 'data1050.cdzzrqlrfv5z.us-east-1.rds.amazonaws.com'
+dbname = 'covid'
+schema = 'public'
+password = 'data1050-postgres-fa20!'
+
+# Get data from databse
+con = psycopg2.connect(dbname=dbname, user=user, host=host, 
+                       password=password)
+
+query_schema = 'SET search_path to ' + schema + ';'
+cur = con.cursor()
+cur.execute('SET search_path to {}'.format(schema))
+
+query = query_schema + 'SELECT * FROM COUNTRY'
+df = pd.read_sql_query(query, con)
 
 app = dash.Dash(__name__)
 server = app.server
@@ -31,14 +44,14 @@ app.layout = html.Div([
     Output('covid-map', 'figure'),
     [Input('type-selector', 'value')])
 def update_figure(selected_category):
-    return px.scatter_geo(summary_df,
-        lat = summary_df['Lat'],
-        lon = summary_df['Long'],
-        color=summary_df[selected_category],
+    return px.scatter_geo(df,
+        lat = df['Lat'],
+        lon = df['Long'],
+        color=df[selected_category],
         opacity=0.4,
-        hover_name=summary_df['Country'],
-        size=summary_df["Ln " + selected_category],
-        animation_frame=summary_df['Date'].astype(str),
+        hover_name=df['Country'],
+        size=df["Ln " + selected_category],
+        animation_frame=df['Date'].astype(str),
         projection="natural earth")
 
 if __name__ == "__main__":
