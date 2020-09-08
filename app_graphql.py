@@ -14,15 +14,13 @@ host = 'data1050.cdzzrqlrfv5z.us-east-1.rds.amazonaws.com'
 dbname = 'covid'
 schema = 'public'
 password = 'data1050-postgres-fa20!'
-
-# Get data from databse
 con = psycopg2.connect(dbname=dbname, user=user, host=host, 
                        password=password)
-
 query_schema = 'SET search_path to ' + schema + ';'
 cur = con.cursor()
 cur.execute('SET search_path to {}'.format(schema))
 
+# Get data from database
 query = query_schema + 'SELECT * FROM COUNTRY'
 df = pd.read_sql_query(query, con)
 
