@@ -1,1 +1,1 @@
-web: gunicorn app_graphql:server
+web: gunicorn app:server
