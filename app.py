@@ -21,7 +21,14 @@ cur = con.cursor()
 cur.execute('SET search_path to {}'.format(schema))
 
 # Get data from database
-query = query_schema + 'SELECT * FROM COUNTRY'
+query = query_schema + '''
+SELECT "Country", "Date", "Lat", "Long", "Confirmed", "Deaths", 
+"Log10 Confirmed", "Log10 Deaths","Ln Confirmed", "Ln Deaths"
+FROM cases c
+INNER JOIN location l
+ON c.country_code = l.country_code
+'''
+
 df = pd.read_sql_query(query, con)
 
 app = dash.Dash(__name__)
