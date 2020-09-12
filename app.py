@@ -26,7 +26,7 @@ SELECT "Country", "Date", "Lat", "Long", "Confirmed", "Deaths",
 "Log10 Confirmed", "Log10 Deaths","Ln Confirmed", "Ln Deaths"
 FROM cases c
 INNER JOIN location l
-ON c.country_code = l.country_code
+ON c.country_code = l.country_code;
 '''
 
 df = pd.read_sql_query(query, con)
