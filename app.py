@@ -8,6 +8,9 @@ import json
 import pandas as pd
 import psycopg2
 
+import os
+import bmemcached
+
 # Create a database connection
 user = 'postgres'
 host = 'data1050.cdzzrqlrfv5z.us-east-1.rds.amazonaws.com'
@@ -31,11 +34,14 @@ ON c.country_code = l.country_code;
 
 df = pd.read_sql_query(query, con)
 
+mc = bmemcached.Client(os.environ.get('MEMCACHEDCLOUD_SERVERS').split(','), os.environ.get('MEMCACHEDCLOUD_USERNAME'), os.environ.get('MEMCACHEDCLOUD_PASSWORD'))
+mc.set('foo', 'bar')
+
 app = dash.Dash(__name__)
 server = app.server
 
 app.layout = html.Div([
-    html.H1(id='title', children='Covid-19 Tracker'),
+    html.H1(id='title', children=client.get('foo'),
     dcc.RadioItems(
         id='type-selector',
         options=[{'label': i, 'value': i} for i in ['Confirmed', 'Deaths']],
